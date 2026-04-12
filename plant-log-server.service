@@ -1,0 +1,38 @@
+[Unit]
+Description=Plant Watering — Log Server & Dashboard
+After=network.target
+# Must be running before the watering script connects to it
+Before=plant-watering.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/plant-watering
+
+# Email credentials — edit these values directly, or move them to
+# /etc/plant-watering.env and switch to EnvironmentFile= below
+Environment="EMAIL_FROM=you@gmail.com"
+Environment="EMAIL_TO=you@gmail.com"
+Environment="EMAIL_PASSWORD=xxxx xxxx xxxx xxxx"
+Environment="EMAIL_HOST=smtp.gmail.com"
+Environment="EMAIL_PORT=587"
+
+# Alternative: store credentials in a file instead of here
+# (chmod 600 /etc/plant-watering.env  so only root can read it)
+# EnvironmentFile=/etc/plant-watering.env
+
+ExecStart=/usr/bin/python3 /home/pi/plant-watering/log_server.py
+
+# Restart automatically if it crashes, but not if it exits cleanly
+Restart=on-failure
+RestartSec=10
+
+# Give it 30 seconds to start before systemd gives up
+TimeoutStartSec=30
+
+# Log stdout/stderr to journald (view with: journalctl -u plant-log-server)
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

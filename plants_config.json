@@ -1,0 +1,26 @@
+{
+  "_comment": "Auto-generated plant configuration. Edit directly or use the dashboard to add plants.",
+  "plants": [
+    {
+      "name": "Plant 1",
+      "sensor_channel": 0,
+      "relay_pin": null,
+      "threshold": 40,
+      "water_duration": 3
+    },
+    {
+      "name": "Plant 2",
+      "sensor_channel": 1,
+      "relay_pin": null,
+      "threshold": 40,
+      "water_duration": 3
+    },
+    {
+      "name": "Plant 3",
+      "sensor_channel": 2,
+      "relay_pin": null,
+      "threshold": 40,
+      "water_duration": 3
+    }
+  ]
+}

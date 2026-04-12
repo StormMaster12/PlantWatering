@@ -1,0 +1,25 @@
+[Unit]
+Description=Plant Watering — Sensor & Pump Controller
+After=network.target plant-log-server.service
+# Watering script won't start until the log server is up
+Requires=plant-log-server.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/plant-watering
+
+ExecStart=/usr/bin/python3 /home/pi/plant-watering/plant_watering.py
+
+# Restart automatically on failure with a short delay
+Restart=on-failure
+RestartSec=15
+
+# If gpiozero can't reach the hardware, give it 30 s before giving up on this boot
+TimeoutStartSec=30
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
