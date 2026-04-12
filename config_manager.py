@@ -12,6 +12,8 @@ from pathlib import Path
 from threading import Lock
 from typing import Optional
 
+from plant_types import Plant
+
 log = logging.getLogger(__name__)
 
 CONFIG_PATH = Path(os.getenv("PLANTS_CONFIG", "/home/pi/plant-watering/plants_config.json"))
@@ -23,7 +25,7 @@ MAX_CHANNELS = 8   # MCP3008 channel count
 
 # ── Read ────────────────────────────────────────────────────────────
 
-def load_plants() -> list[dict]:
+def load_plants() -> list[Plant]:
     """Return the list of plant dicts from config, or [] on error."""
     try:
         with _lock:
@@ -40,7 +42,7 @@ def load_plants() -> list[dict]:
 
 # ── Write ───────────────────────────────────────────────────────────
 
-def save_plants(plants: list[dict]) -> None:
+def save_plants(plants: list[Plant]) -> None:
     """Overwrite the config file with the given plant list."""
     payload = {"plants": plants}
     tmp = CONFIG_PATH.with_suffix(".tmp")
@@ -63,7 +65,7 @@ def add_plant(
     relay_pin:      Optional[int],
     threshold:      int,
     water_duration: int,
-) -> dict:
+) -> Plant:
     """
     Validate and append a new plant to the config.
     Returns the new plant dict.
@@ -88,14 +90,7 @@ def add_plant(
     if not 1 <= water_duration <= 30:
         raise ConfigError("water_duration must be between 1 and 30 seconds")
 
-    plant = {
-        "name":           name.strip(),
-        "sensor_channel": sensor_channel,
-        "relay_pin":      relay_pin,
-        "threshold":      threshold,
-        "water_duration": water_duration,
-    }
-
+    plant = Plant(name= name.strip(), sensor_channel= sensor_channel, relay_pin= relay_pin, threshold=threshold, water_duration=water_duration)
     plants.append(plant)
     save_plants(plants)
 

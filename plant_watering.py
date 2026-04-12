@@ -17,6 +17,7 @@ from typing import Optional
 
 from gpiozero import MCP3008, OutputDevice
 from config_manager import load_plants
+from plant_types import Plant
 
 # ════════════════════════════════════════════════════════════════════
 #  CALIBRATION  —  adjust if sensor readings drift over time
@@ -51,9 +52,9 @@ LOG_LEVEL       = logging.INFO
 # ════════════════════════════════════════════════════════════════════
 
 PLANTS = [
-    dict(name="Plant 1", sensor_channel=0, relay_pin=None, threshold=40, water_duration=3),
-    dict(name="Plant 2", sensor_channel=1, relay_pin=None, threshold=40, water_duration=3),
-    dict(name="Plant 3", sensor_channel=2, relay_pin=None, threshold=40, water_duration=3),
+    Plant(name="PlantControl 1", sensor_channel=0, relay_pin=None, threshold=40, water_duration=3),
+    Plant(name="PlantControl 2", sensor_channel=1, relay_pin=None, threshold=40, water_duration=3),
+    Plant(name="PlantControl 3", sensor_channel=2, relay_pin=None, threshold=40, water_duration=3),
     # ── add more below, up to channel 7 ──
     # dict(name="Cactus",   sensor_channel=3, relay_pin=None, threshold=20, water_duration=1),
     # dict(name="Fern",     sensor_channel=4, relay_pin=None, threshold=55, water_duration=4),
@@ -98,7 +99,7 @@ def raw_to_moisture(raw: float) -> float:
 
 
 @dataclass
-class Plant:
+class PlantControl:
     name:           str
     sensor_channel: int
     relay_pin:      Optional[int]
@@ -113,7 +114,7 @@ class Plant:
     def setup(self) -> bool:
         """
         Initialise hardware. Returns True if the plant is ready to run.
-        Plants with relay_pin=None are skipped gracefully.
+        PlantControls with relay_pin=None are skipped gracefully.
         """
         if self.relay_pin is None:
             log.warning(
@@ -190,11 +191,11 @@ class Plant:
             self._sensor.close()
 
 
-def build_plants() -> list[Plant]:
+def build_plants() -> list[PlantControl]:
     """Load plants from plants_config.json and initialise hardware."""
     plants = []
     for cfg in load_plants():
-        plant = Plant(**cfg)
+        plant = PlantControl(**cfg)
         if plant.setup():
             plants.append(plant)
     return plants
@@ -202,7 +203,7 @@ def build_plants() -> list[Plant]:
 
 def main() -> None:
     log.info("═" * 60)
-    log.info("Plant watering system starting")
+    log.info("PlantControl watering system starting")
     log.info("Poll interval: %ds  |  Min water gap: %ds", POLL_INTERVAL, MIN_WATER_GAP)
     log.info("Sensor range: %.2f (dry) → %.2f (wet)", SENSOR_DRY, SENSOR_WET)
     log.info("═" * 60)
