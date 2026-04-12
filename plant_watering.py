@@ -12,6 +12,7 @@ import logging.handlers
 import signal
 import sys
 import time
+import types
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -152,7 +153,8 @@ class PlantControl:
 
     def check_and_water(self) -> None:
         """Read moisture; water the plant if below threshold and cooldown has passed."""
-        if self._sensor is None or self._pump is None:
+        pump = self._pump
+        if self._sensor is None or pump is None:
             return
 
         pct = self.moisture
@@ -176,9 +178,9 @@ class PlantControl:
             "[%s] moisture %.1f%% below threshold %d%% — watering for %ds",
             self.name, pct, self.threshold, self.water_duration,
         )
-        self._pump.on()
+        pump.on()
         time.sleep(self.water_duration)
-        self._pump.off()
+        pump.off()
         self._last_watered = time.monotonic()
         log.info("[%s] watering complete", self.name)
 
@@ -193,7 +195,7 @@ class PlantControl:
 
 def build_plants() -> list[PlantControl]:
     """Load plants from plants_config.json and initialise hardware."""
-    plants = []
+    plants: list[PlantControl] = []
     for cfg in load_plants():
         plant = PlantControl(**cfg)
         if plant.setup():
@@ -217,7 +219,7 @@ def main() -> None:
     log.info("%d plant(s) active", len(plants))
 
     # ── graceful shutdown on Ctrl-C or SIGTERM ──
-    def shutdown(sig, frame):
+    def shutdown(sig: int, _frame: types.FrameType | None) -> None:
         log.info("Shutdown signal received — turning off all pumps")
         for plant in plants:
             plant.close()

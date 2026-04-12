@@ -33,8 +33,9 @@ import threading
 import time
 from datetime import datetime
 from email.message import EmailMessage
+from typing import TypedDict
 
-from flask import Flask, jsonify, render_template_string, request
+from flask import Flask, Response, jsonify, render_template_string, request
 
 from config_manager import (
     ConfigError,
@@ -60,20 +61,36 @@ EMAIL_COOLDOWN = {
     logging.CRITICAL:      60,   # 1 minute between critical emails
 }
 
+class EmailConfig(TypedDict):
+    emailFrom: str
+    to: str
+    password: str
+    host: str
+    port: int
+
+class LogStructure(TypedDict):
+    time:     str
+    date:     str
+    level:    str
+    levelno:  int
+    message:  str
+
 # Email credentials — read from environment variables
-EMAIL_CFG = {
-    "from":     os.getenv("EMAIL_FROM",     ""),
-    "to":       os.getenv("EMAIL_TO",       ""),
-    "password": os.getenv("EMAIL_PASSWORD", ""),
-    "host":     os.getenv("EMAIL_HOST",     "smtp.gmail.com"),
-    "port":     int(os.getenv("EMAIL_PORT", "587")),
-}
+EMAIL_CFG = EmailConfig(
+    emailFrom=os.getenv("EMAIL_FROM",     ""),
+    to=       os.getenv("EMAIL_TO",       ""),
+    password= os.getenv("EMAIL_PASSWORD", ""),
+    host=     os.getenv("EMAIL_HOST",     "smtp.gmail.com"),
+    port=     int(os.getenv("EMAIL_PORT", "587")),
+)
+
+
 
 # ════════════════════════════════════════════════════════════════════
 #  SHARED STATE
 # ════════════════════════════════════════════════════════════════════
 
-log_buffer: collections.deque = collections.deque(maxlen=LOG_BUFFER_SIZE)
+log_buffer: collections.deque[LogStructure] = collections.deque(maxlen=LOG_BUFFER_SIZE)
 buffer_lock = threading.Lock()
 
 # tracks when the last email was sent per level
@@ -85,7 +102,7 @@ email_lock = threading.Lock()
 # ════════════════════════════════════════════════════════════════════
 
 def email_is_configured() -> bool:
-    return all([EMAIL_CFG["from"], EMAIL_CFG["to"], EMAIL_CFG["password"]])
+    return all([EMAIL_CFG["emailFrom"], EMAIL_CFG["to"], EMAIL_CFG["password"]])
 
 
 def maybe_send_email(record: logging.LogRecord) -> None:
@@ -114,7 +131,7 @@ def _send_email(record: logging.LogRecord) -> None:
 
     msg = EmailMessage()
     msg["Subject"] = f"[Plant Watering] {level_name}: {record.getMessage()[:60]}"
-    msg["From"]    = EMAIL_CFG["from"]
+    msg["From"]    = EMAIL_CFG["emailFrom"]
     msg["To"]      = EMAIL_CFG["to"]
     msg.set_content(
         f"Level    : {level_name}\n"
@@ -129,7 +146,7 @@ def _send_email(record: logging.LogRecord) -> None:
         with smtplib.SMTP(EMAIL_CFG["host"], EMAIL_CFG["port"]) as smtp:
             smtp.ehlo()
             smtp.starttls()
-            smtp.login(EMAIL_CFG["from"], EMAIL_CFG["password"])
+            smtp.login(EMAIL_CFG["emailFrom"], EMAIL_CFG["password"])
             smtp.send_message(msg)
         print(f"[email] sent {level_name} alert for: {record.getMessage()[:60]}")
     except Exception as exc:
@@ -145,7 +162,7 @@ class LogRecordHandler(socketserver.StreamRequestHandler):
     Handles one persistent TCP connection from a SocketHandler client.
     Each record is sent as a 4-byte big-endian length prefix + pickled dict.
     """
-    def handle(self):
+    def handle(self) -> None:
         while True:
             # read the 4-byte length prefix
             chunk = self.connection.recv(4)
@@ -166,7 +183,7 @@ class LogRecordHandler(socketserver.StreamRequestHandler):
             obj  = pickle.loads(data)
             record = logging.makeLogRecord(obj)
 
-            entry = {
+            entry:LogStructure = {
                 "time":     datetime.fromtimestamp(record.created).strftime("%H:%M:%S"),
                 "date":     datetime.fromtimestamp(record.created).strftime("%Y-%m-%d"),
                 "level":    record.levelname,
@@ -436,12 +453,12 @@ setInterval(poll, POLL_MS);
 
 
 @app.route("/")
-def dashboard():
+def dashboard() -> str:
     return render_template_string(DASHBOARD_HTML)
 
 
 @app.route("/api/logs")
-def api_logs():
+def api_logs() -> Response:
     with buffer_lock:
         return jsonify({"logs": list(log_buffer)})
 
@@ -449,12 +466,12 @@ def api_logs():
 # ── Plant management routes ─────────────────────────────────────────
 
 @app.route("/api/plants", methods=["GET"])
-def api_plants():
+def api_plants() -> Response:
     return jsonify({"plants": load_plants()})
 
 
 @app.route("/api/plants/add", methods=["POST"])
-def api_plants_add():
+def api_plants_add() -> Response | tuple[Response, int]:
     data = request.get_json(force=True)
     try:
         plant = add_plant(
@@ -464,23 +481,23 @@ def api_plants_add():
             threshold=      int(data["threshold"]),
             water_duration= int(data["water_duration"]),
         )
-        ok, msg = reload_watering_service()
+        _, msg = reload_watering_service()
         return jsonify({"success": True, "plant": plant, "service_message": msg})
     except (ConfigError, KeyError, ValueError) as exc:
         return jsonify({"success": False, "error": str(exc)}), 400
 
 
 @app.route("/api/plants/remove/<int:channel>", methods=["DELETE"])
-def api_plants_remove(channel: int):
+def api_plants_remove(channel: int) -> Response | tuple[Response, int]:
     removed = remove_plant(channel)
     if not removed:
         return jsonify({"success": False, "error": f"No plant on channel {channel}"}), 404
-    ok, msg = reload_watering_service()
+    _ok, msg = reload_watering_service()
     return jsonify({"success": True, "service_message": msg})
 
 
 @app.route("/api/identify", methods=["POST"])
-def api_identify():
+def api_identify() -> Response | tuple[Response, int]:
     """
     Trigger a camera capture and plant identification.
     Accepts optional JSON body: {"image_path": "/path/to/existing.jpg"}

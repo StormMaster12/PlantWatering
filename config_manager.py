@@ -10,7 +10,7 @@ import os
 import subprocess
 from pathlib import Path
 from threading import Lock
-from typing import Optional
+from typing import Optional, cast
 
 from plant_types import Plant
 
@@ -31,7 +31,7 @@ def load_plants() -> list[Plant]:
         with _lock:
             with open(CONFIG_PATH) as f:
                 data = json.load(f)
-        return data.get("plants", [])
+        return cast(list[Plant], data.get("plants", []))
     except FileNotFoundError:
         log.warning("plants_config.json not found — returning empty list")
         return []

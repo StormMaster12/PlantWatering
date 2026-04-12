@@ -15,7 +15,6 @@ import base64
 import json
 import logging
 import os
-import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -169,7 +168,12 @@ def identify_plant(image_path: str) -> PlantIdentification:
         ],
     )
 
-    raw = message.content[0].text.strip()
+    content_block = message.content[0]
+    if not isinstance(content_block, anthropic.types.TextBlock):
+        raise RuntimeError(
+            f"Unexpected response type from Claude: {type(content_block).__name__}"
+        )
+    raw = content_block.text.strip()
 
     try:
         data = json.loads(raw)

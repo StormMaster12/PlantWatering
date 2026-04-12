@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe -c \"import gpiozero; print\\(gpiozero.__file__\\)\")",
+      "Bash(.venv/Scripts/python.exe -m pyright --outputjson plant_identifier.py plant_watering.py config_manager.py plant_types.py log_server.py)",
+      "Bash(npx pyright:*)",
+      "Bash(.venv/Scripts/python.exe -c ':*)",
+      "Bash(.venv/Scripts/python.exe -c \"import flask; print\\('flask', flask.__version__\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"import anthropic; print\\('anthropic OK'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"import gpiozero; print\\('gpiozero OK'\\)\")"
+    ]
+  }
+}
