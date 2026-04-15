@@ -4,7 +4,7 @@
     {
       "name": "Plant 1",
       "sensor_channel": 0,
-      "relay_pin": null,
+      "relay_pin": 5,
       "threshold": 40,
       "water_duration": 3
     },
