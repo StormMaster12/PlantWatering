@@ -13,7 +13,7 @@ GITHUB_REPO="https://github.com/StormMaster12/PlantWatering.git"  # ← change t
 GITHUB_BRANCH="main"
 
 APP_DIR="/home/pi/plant-watering"
-APP_USER="pi"
+APP_USER="james"
 SERVICE_DIR="/etc/systemd/system"
 
 # Email credentials — written into the service file at install time.
