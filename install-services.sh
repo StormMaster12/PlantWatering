@@ -9,7 +9,7 @@ set -e
 #  CONFIGURATION — edit before running
 # ════════════════════════════════════════════════════════════════════
 
-GITHUB_REPO="https://github.com/YOUR_USERNAME/YOUR_REPO.git"  # ← change this
+GITHUB_REPO="https://github.com/StormMaster12/PlantWatering.git"  # ← change this
 GITHUB_BRANCH="main"
 
 APP_DIR="/home/pi/plant-watering"
