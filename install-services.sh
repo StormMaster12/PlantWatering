@@ -66,7 +66,7 @@ fi
 # ════════════════════════════════════════════════════════════════════
 
 echo "── Installing Python dependencies"
-pip3 install flask gpiozero lgpio anthropic picamera2 --break-system-packages
+pip3 install flask gpiozero lgpio picamera2 --break-system-packages
 
 # Allow the 'pi' user to restart the watering service without a password
 # (needed for config_manager.reload_watering_service())

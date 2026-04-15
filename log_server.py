@@ -496,33 +496,33 @@ def api_plants_remove(channel: int) -> Response | tuple[Response, int]:
     return jsonify({"success": True, "service_message": msg})
 
 
-@app.route("/api/identify", methods=["POST"])
-def api_identify() -> Response | tuple[Response, int]:
-    """
-    Trigger a camera capture and plant identification.
-    Accepts optional JSON body: {"image_path": "/path/to/existing.jpg"}
-    to test identification without a camera.
-    """
-    try:
-        from plant_identifier import capture_and_identify, identify_plant
-        body = request.get_json(force=True, silent=True) or {}
-        if "image_path" in body:
-            result = identify_plant(body["image_path"])
-        else:
-            result = capture_and_identify()
-        return jsonify({
-            "success":          True,
-            "plant_name":       result.plant_name,
-            "common_name":      result.common_name,
-            "confidence":       result.confidence,
-            "description":      result.description,
-            "moisture_threshold": result.moisture_threshold,
-            "water_duration":   result.water_duration,
-            "care_notes":       result.care_notes,
-            "image_path":       result.image_path,
-        })
-    except Exception as exc:
-        return jsonify({"success": False, "error": str(exc)}), 500
+# @app.route("/api/identify", methods=["POST"])
+# def api_identify() -> Response | tuple[Response, int]:
+#     """
+#     Trigger a camera capture and plant identification.
+#     Accepts optional JSON body: {"image_path": "/path/to/existing.jpg"}
+#     to test identification without a camera.
+#     """
+#     try:
+#         from plant_identifier import capture_and_identify, identify_plant
+#         body = request.get_json(force=True, silent=True) or {}
+#         if "image_path" in body:
+#             result = identify_plant(body["image_path"])
+#         else:
+#             result = capture_and_identify()
+#         return jsonify({
+#             "success":          True,
+#             "plant_name":       result.plant_name,
+#             "common_name":      result.common_name,
+#             "confidence":       result.confidence,
+#             "description":      result.description,
+#             "moisture_threshold": result.moisture_threshold,
+#             "water_duration":   result.water_duration,
+#             "care_notes":       result.care_notes,
+#             "image_path":       result.image_path,
+#         })
+#     except Exception as exc:
+#         return jsonify({"success": False, "error": str(exc)}), 500
 
 
 # ════════════════════════════════════════════════════════════════════
