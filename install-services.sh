@@ -12,7 +12,7 @@ set -e
 GITHUB_REPO="https://github.com/StormMaster12/PlantWatering.git"  # ← change this
 GITHUB_BRANCH="main"
 
-APP_DIR="/plant-watering"
+APP_DIR="/home/pi/plant-watering"
 APP_USER="pi"
 SERVICE_DIR="/etc/systemd/system"
 
