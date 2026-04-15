@@ -122,7 +122,13 @@ Requires=plant-log-server.service
 [Service]
 Type=simple
 User=${APP_USER}
+# gpio = GPIO/SPI chip access, spi = SPI bus, i2c = I2C bus
+SupplementaryGroups=gpio spi i2c
 WorkingDirectory=${APP_DIR}
+
+# lgpio is installed by this script and works on Pi OS Bookworm+.
+# gpiozero does not auto-discover lgpio; we must select it explicitly.
+Environment="GPIOZERO_PIN_FACTORY=lgpio"
 
 ExecStart=/usr/bin/python3 ${APP_DIR}/plant_watering.py
 Restart=on-failure

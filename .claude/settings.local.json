@@ -7,7 +7,8 @@
       "Bash(.venv/Scripts/python.exe -c ':*)",
       "Bash(.venv/Scripts/python.exe -c \"import flask; print\\('flask', flask.__version__\\)\")",
       "Bash(.venv/Scripts/python.exe -c \"import anthropic; print\\('anthropic OK'\\)\")",
-      "Bash(.venv/Scripts/python.exe -c \"import gpiozero; print\\('gpiozero OK'\\)\")"
+      "Bash(.venv/Scripts/python.exe -c \"import gpiozero; print\\('gpiozero OK'\\)\")",
+      "Bash(python -m pytest tests/ -x --tb=short)"
     ]
   }
 }
