@@ -12,11 +12,13 @@ from pathlib import Path
 from threading import Lock
 from typing import Optional, cast
 
-from plant_types import Plant
+from plant_types import Plant, Sensor
 
 log = logging.getLogger(__name__)
 
 CONFIG_PATH = Path(os.getenv("PLANTS_CONFIG", "/home/pi/plant-watering/plants_config.json"))
+SENSOR_CONFIG_PATH = Path(os.getenv("SENSOR_CONFIG_PATH", "/home/pi/plant-watering/sensors_calibration.json"))
+
 _lock = Lock()
 
 MAX_PLANTS   = 8
@@ -39,6 +41,19 @@ def load_plants() -> list[Plant]:
         log.error("plants_config.json is malformed: %s", exc)
         return []
 
+
+def load_sensor_calibration() -> list[Sensor]:
+    try:
+        with _lock:
+            with open(SENSOR_CONFIG_PATH) as f:
+                data = json.load(f)
+        return cast (list[Sensor], data.get('sensors', []))
+    except FileNotFoundError:
+        log.warning("sensors_calibration.json not found — returning empty list")
+        return []
+    except json.JSONDecodeError as exc:
+        log.error("sensors_calibration.json is malformed: %s", exc)
+        return []
 
 # ── Write ───────────────────────────────────────────────────────────
 

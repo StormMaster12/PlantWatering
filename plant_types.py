@@ -7,3 +7,8 @@ class Plant(TypedDict):
     relay_pin:      Optional[int]
     threshold:      float         # moisture % below which we water
     water_duration: float         # seconds to run pump per cycle
+
+class Sensor(TypedDict):
+    sensor_channel: int
+    max: float
+    min:float

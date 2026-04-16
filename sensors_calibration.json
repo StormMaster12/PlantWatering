@@ -1,0 +1,19 @@
+{
+    "sensors": [
+        {
+            "sensor_channel": 0,
+            "max": 0.55,
+            "min": 0.22
+        },
+        {
+            "sensor_channel": 0,
+            "max": 0.55,
+            "min": 0.22
+        },
+        {
+            "sensor_channel": 0,
+            "max": 0.55,
+            "min": 0.22
+        }
+    ]
+}

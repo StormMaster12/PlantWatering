@@ -17,8 +17,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from gpiozero import MCP3008, OutputDevice
-from config_manager import load_plants
-from plant_types import Plant
+from config_manager import load_plants, load_sensor_calibration
+from plant_types import Plant, Sensor
 
 # ════════════════════════════════════════════════════════════════════
 #  CALIBRATION  —  adjust if sensor readings drift over time
@@ -86,19 +86,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def raw_to_moisture(raw: float) -> float:
-    """
-    Convert raw ADC voltage ratio to moisture percentage.
-
-    The sensor outputs a LOWER voltage when WET and a HIGHER voltage
-    when DRY, so the scale is inverted before converting to percent.
-
-    Returns a value clamped between 0 and 100.
-    """
-    moisture = (SENSOR_DRY - raw) / (SENSOR_DRY - SENSOR_WET) * 100
-    return max(0.0, min(100.0, moisture))
-
-
 @dataclass
 class PlantControl:
     name:           str
@@ -108,11 +95,13 @@ class PlantControl:
     water_duration: float         # seconds to run pump per cycle
 
     # internal state — not set by caller
-    _sensor:        Optional[MCP3008]       = field(default=None, init=False, repr=False)
-    _pump:          Optional[OutputDevice]  = field(default=None, init=False, repr=False)
-    _last_watered:  float                   = field(default=0.0,  init=False, repr=False)
+    _sensor:      Optional[MCP3008]       = field(default=None, init=False, repr=False)
+    _pump:        Optional[OutputDevice]  = field(default=None, init=False, repr=False)
+    last_watered: float                   = field(default=0.0,  init=False, repr=False)
+    _sensor_max:  float                   = field(default=0.0,  init=False, repr=False)
+    _sensor_min:  float                   = field(default=0.0,  init=False, repr=False)
 
-    def setup(self) -> bool:
+    def setup(self, sensors: list[Sensor]) -> bool:
         """
         Initialise hardware. Returns True if the plant is ready to run.
         PlantControls with relay_pin=None are skipped gracefully.
@@ -127,6 +116,13 @@ class PlantControl:
         try:
             # MCP3008 uses hardware SPI by default (CE0, GPIO 8)
             self._sensor = MCP3008(channel=self.sensor_channel)
+            sensor = next(
+                (s for s in sensors if s["sensor_channel"] == self.sensor_channel), None
+            )
+            if sensor is None:
+                raise ValueError(f"No calibration entry for channel {self.sensor_channel}")
+            self._sensor_max = sensor["max"]
+            self._sensor_min = sensor["min"]
 
             # Most relay modules are active-LOW: active_high=False means
             # calling .on() pulls the pin LOW and energises the relay.
@@ -149,7 +145,7 @@ class PlantControl:
         """Current moisture reading as a percentage (0–100)."""
         if self._sensor is None:
             return 0.0
-        return raw_to_moisture(self._sensor.value)
+        return self.raw_to_moisture() # type: ignore
 
     def check_and_water(self) -> None:
         """Read moisture; water the plant if below threshold and cooldown has passed."""
@@ -164,7 +160,7 @@ class PlantControl:
             return  # soil is moist enough
 
         now = time.monotonic()
-        since_last = now - self._last_watered
+        since_last = now - self.last_watered
 
         if since_last < MIN_WATER_GAP:
             log.warning(
@@ -181,7 +177,7 @@ class PlantControl:
         pump.on()
         time.sleep(self.water_duration)
         pump.off()
-        self._last_watered = time.monotonic()
+        self.last_watered = time.monotonic()
         log.info("[%s] watering complete", self.name)
 
     def close(self) -> None:
@@ -192,13 +188,28 @@ class PlantControl:
         if self._sensor is not None:
             self._sensor.close()
 
+    def raw_to_moisture(self) -> float:
+        """
+        Convert raw ADC voltage ratio to moisture percentage.
+
+        The sensor outputs a LOWER voltage when WET and a HIGHER voltage
+        when DRY, so the scale is inverted before converting to percent.
+
+        Returns a value clamped between 0 and 100.
+        """
+        raw: float = self._sensor.value  # type: ignore[union-attr]
+        moisture: float = (self._sensor_max - raw) / (self._sensor_max - self._sensor_min) * 100
+        return max(0.0, min(100.0, moisture))
+
 
 def build_plants() -> list[PlantControl]:
     """Load plants from plants_config.json and initialise hardware."""
     plants: list[PlantControl] = []
+    sensors = load_sensor_calibration()
+    
     for cfg in load_plants():
         plant = PlantControl(**cfg)
-        if plant.setup():
+        if plant.setup(sensors):
             plants.append(plant)
     return plants
 
